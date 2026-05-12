@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لعبة دورة حياة الفراشة 🦋</title>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d1a;
+  --card: #161628;
+  --green: #22c55e;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --blue: #38bdf8;
+  --pink: #f472b6;
+  --purple: #a855f7;
+  --white: #f1f5f9;
+  --muted: #64748b;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Tajawal', sans-serif;
+  background: var(--bg);
+  min-height: 100vh;
+  color: var(--white);
+  overflow-x: hidden;
+}
+
+/* Stars background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 50% 70%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 10% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 60%, rgba(255,255,255,0.2) 0%, transparent 100%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 60px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 28px;
+}
+.badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+.header h1 {
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+.header h1 span { color: var(--pink); }
+.header p { color: var(--muted); margin-top: 6px; font-size: 0.95rem; }
+
+/* Score bar */
+.scorebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 16px;
+  padding: 14px 20px;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+.score-item { text-align: center; }
+.score-item .val {
+  font-size: 1.5rem;
+  font-weight: 900;
+  color: var(--yellow);
+}
+.score-item .lbl { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
+.progress-wrap { flex: 1; }
+.progress-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.1);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--purple), var(--pink));
+  border-radius: 99px;
+  transition: width 0.5s ease;
+}
+.progress-lbl { font-size: 0.72rem; color: var(--muted); text-align: center; margin-top: 4px; }
+
+/* Game sections */
+.section { display: none; }
+.section.active { display: block; animation: fadeUp 0.4s ease; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── GAME 1: SORT ─── */
+.sort-title {
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.sort-sub { text-align: center; color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+.stages-pool {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  margin-bottom: 28px;
+  min-height: 80px;
+  padding: 12px;
+  border: 2px dashed rgba(255,255,255,0.15);
+  border-radius: 16px;
+}
+
+.stage-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 14px 20px;
+  background: var(--card);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  cursor: grab;
+  font-size: 2rem;
+  font-weight: 700;
+  transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+  user-select: none;
+  min-width: 100px;
+  text-align: center;
+}
+.stage-card span { font-size: 0.8rem; color: var(--muted); font-weight: 400; }
+.stage-card:hover { transform: scale(1.08); border-color: var(--purple); box-shadow: 0 0 20px rgba(168,85,247,0.3); }
+.stage-card.dragging { opacity: 0.4; transform: scale(0.95); }
+
+.drop-zone {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.drop-slot {
+  width: 120px;
+  min-height: 110px;
+  border: 2px dashed rgba(255,255,255,0.2);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.2s, background 0.2s;
+  position: relative;
+}
+.drop-slot .slot-num {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+.drop-slot.over { border-color: var(--purple); background: rgba(168,85,247,0.1); }
+.drop-slot.correct { border-color: var(--green); background: rgba(34,197,94,0.1); }
+.drop-slot.wrong { border-color: var(--red); background: rgba(239,68,68,0.1); animation: shake 0.4s; }
+@keyframes shake {
+  0%,100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
+.check-btn {
+  display: block;
+  margin: 0 auto;
+  padding: 14px 48px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  border: none;
+  border-radius: 99px;
+  color: #fff;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.check-btn:hover { transform: scale(1.05); box-shadow: 0 8px 24px rgba(168,85,247,0.4); }
+
+/* ─── GAME 2: MATCH ─── */
+.match-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.match-col { display: flex; flex-direction: column; gap: 10px; }
+.match-col h3 { text-align: center; font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
+
+.match-item {
+  padding: 14px 16px;
+  background: var(--card);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  font-weight: 700;
+  font-size: 1rem;
+}
+.match-item:hover { transform: scale(1.03); border-color: var(--blue); }
+.match-item.selected { border-color: var(--yellow); background: rgba(245,158,11,0.12); }
+.match-item.matched  { border-color: var(--green); background: rgba(34,197,94,0.12); cursor: default; }
+.match-item.wrong    { border-color: var(--red); animation: shake 0.4s; }
+.match-item.emoji { font-size: 2.2rem; }
+
+/* ─── GAME 3: QUIZ ─── */
+.quiz-question {
+  background: var(--card);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 20px;
+  padding: 24px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+.quiz-q-num { font-size: 0.8rem; color: var(--muted); margin-bottom: 8px; }
+.quiz-q-text { font-size: 1.3rem; font-weight: 700; line-height: 1.5; }
+.quiz-q-emoji { font-size: 3rem; margin-bottom: 12px; }
+
+.quiz-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.quiz-opt {
+  padding: 16px;
+  background: var(--card);
+  border: 2px solid rgba(255,255,255,0.1);
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--white);
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  text-align: center;
+}
+.quiz-opt:hover:not(:disabled) { transform: scale(1.04); border-color: var(--blue); background: rgba(56,189,248,0.1); }
+.quiz-opt.correct  { border-color: var(--green) !important; background: rgba(34,197,94,0.15) !important; }
+.quiz-opt.wrong    { border-color: var(--red) !important; background: rgba(239,68,68,0.15) !important; }
+.quiz-opt:disabled { cursor: default; }
+
+.quiz-feedback {
+  text-align: center;
+  font-size: 1.1rem;
+  font-weight: 700;
+  min-height: 32px;
+  margin-bottom: 16px;
+}
+.quiz-feedback.correct { color: var(--green); }
+.quiz-feedback.wrong   { color: var(--red); }
+
+/* ─── GAME 4: MEMORY ─── */
+.memory-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 24px;
+}
+.mem-card {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  cursor: pointer;
+  perspective: 600px;
+  position: relative;
+}
+.mem-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.4s ease;
+  border-radius: 12px;
+}
+.mem-card.flipped .mem-inner,
+.mem-card.matched .mem-inner { transform: rotateY(180deg); }
+.mem-front, .mem-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  backface-visibility: hidden;
+}
+.mem-front {
+  background: linear-gradient(135deg, #1e1b4b, #312e81);
+  border: 2px solid rgba(168,85,247,0.3);
+  font-size: 2rem;
+}
+.mem-back {
+  background: var(--card);
+  border: 2px solid rgba(255,255,255,0.15);
+  transform: rotateY(180deg);
+  font-size: 1.1rem;
+  text-align: center;
+  padding: 6px;
+  line-height: 1.3;
+}
+.mem-card.matched .mem-back {
+  border-color: var(--green);
+  background: rgba(34,197,94,0.1);
+}
+
+
+/* ─── NAME SCREEN ─── */
+.name-screen {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #0d0d1a 0%, #1e1b4b 50%, #312e81 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+.name-screen.hidden { display: none; }
+.name-card {
+  background: rgba(22, 22, 40, 0.85);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(168,85,247,0.3);
+  border-radius: 28px;
+  padding: 40px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  box-shadow: 0 30px 80px rgba(168,85,247,0.25);
+  animation: fadeUp 0.6s ease;
+}
+.name-emoji {
+  font-size: 4.5rem;
+  margin-bottom: 12px;
+  animation: bounce 2s ease-in-out infinite;
+}
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-12px); }
+}
+.name-title {
+  font-size: 1.7rem;
+  font-weight: 900;
+  margin-bottom: 6px;
+  color: #fff;
+}
+.name-title span { color: var(--pink); }
+.name-subtitle {
+  font-size: 0.95rem;
+  color: #a78bfa;
+  margin-bottom: 28px;
+}
+.name-input {
+  width: 100%;
+  padding: 16px 20px;
+  background: rgba(255,255,255,0.05);
+  border: 2px solid rgba(168,85,247,0.3);
+  border-radius: 14px;
+  color: #fff;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  margin-bottom: 20px;
+}
+.name-input::placeholder { color: #6b7280; }
+.name-input:focus {
+  border-color: var(--purple);
+  background: rgba(168,85,247,0.08);
+}
+.name-start-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 900;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.name-start-btn:hover { transform: scale(1.03); box-shadow: 0 12px 32px rgba(168,85,247,0.4); }
+.name-start-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+/* welcome chip above scorebar */
+.welcome-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(244,114,182,0.15));
+  border: 1px solid rgba(168,85,247,0.3);
+  border-radius: 99px;
+  padding: 6px 16px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 auto 16px;
+}
+.welcome-chip .who { color: var(--pink); }
+
+/* ─── RESULT ─── */
+.result-screen {
+  text-align: center;
+  padding: 40px 20px;
+  animation: fadeUp 0.6s ease;
+}
+.result-emoji { font-size: 5rem; margin-bottom: 16px; }
+.result-title { font-size: 2rem; font-weight: 900; margin-bottom: 8px; }
+.result-score {
+  font-size: 1.1rem;
+  color: var(--muted);
+  margin-bottom: 32px;
+}
+.result-score span { color: var(--yellow); font-weight: 700; font-size: 1.4rem; }
+.restart-btn {
+  padding: 16px 48px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border: none;
+  border-radius: 99px;
+  color: #fff;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.restart-btn:hover { transform: scale(1.05); box-shadow: 0 8px 28px rgba(56,189,248,0.35); }
+
+/* Game tabs */
+.game-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.game-tab {
+  flex-shrink: 0;
+  padding: 8px 18px;
+  border-radius: 99px;
+  border: 1.5px solid rgba(255,255,255,0.15);
+  background: transparent;
+  color: var(--muted);
+  font-family: 'Tajawal', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.game-tab.active {
+  background: linear-gradient(135deg, var(--purple), var(--pink));
+  border-color: transparent;
+  color: #fff;
+}
+.game-tab.done { border-color: var(--green); color: var(--green); }
+
+/* Floating butterflies */
+.fly { position: fixed; pointer-events: none; font-size: 1.5rem; animation: fly 10s linear infinite; z-index: 0; }
+@keyframes fly {
+  0%   { transform: translate(-80px, 0) rotate(-5deg); opacity: 0; }
+  5%   { opacity: 1; }
+  95%  { opacity: 1; }
+  100% { transform: translate(110vw, -60px) rotate(5deg); opacity: 0; }
+}
+.fly:nth-child(2) { top: 20%; animation-delay: 3s; animation-duration: 13s; }
+.fly:nth-child(3) { top: 60%; animation-delay: 7s; animation-duration: 9s; }
+
+.next-btn {
+  display: block;
+  margin: 16px auto 0;
+  padding: 13px 40px;
+  background: linear-gradient(135deg, var(--blue), var(--purple));
+  border: none;
+  border-radius: 99px;
+  color: #fff;
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.next-btn:hover { transform: scale(1.05); }
+</style>
+</head>
+<body>
+
+<!-- ═══ NAME ENTRY SCREEN ═══ -->
+<div class="name-screen" id="nameScreen">
+  <div class="name-card">
+    <div class="name-emoji">🦋</div>
+    <div class="name-title">لعبة دورة حياة <span>الفراشة</span></div>
+    <div class="name-subtitle">اكتب اسمك لتبدأ المغامرة!</div>
+    <input
+      type="text"
+      class="name-input"
+      id="playerName"
+      placeholder="اكتب اسمك هنا..."
+      maxlength="20"
+      autocomplete="off"
+      onkeypress="if(event.key==='Enter') startGame()"
+      oninput="validateName()"
+    >
+    <button class="name-start-btn" id="startBtn" onclick="startGame()" disabled>
+      🚀 ابدأ اللعب!
+    </button>
+  </div>
+</div>
+
+<div class="fly">🦋</div>
+<div class="fly">🦋</div>
+<div class="fly">🦋</div>
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="badge">🤖 لعبة تعليمية بالذكاء الاصطناعي</div>
+    <h1>دورة حياة <span>الفراشة</span> 🦋</h1>
+    <p>علوم — المرحلة الابتدائية</p>
+  </div>
+
+<div class="game-tabs">
+    <button class="game-tab active" onclick="goGame(0)" id="tab0">🔀 رتّب</button>
+    <button class="game-tab" onclick="goGame(1)" id="tab1">🔗 صل</button>
+    <button class="game-tab" onclick="goGame(2)" id="tab2">❓ اختبار</button>
+    <button class="game-tab" onclick="goGame(3)" id="tab3">🧠 ذاكرة</button>
+    <button class="game-tab" onclick="restartGame()" style="border-color:rgba(239,68,68,0.5);color:#f87171;">🔄 من جديد</button>
+  </div>
+
+  <!-- ═══ GAME 1: SORT ═══ -->
+  <div class="section active" id="game0">
+    <div class="sort-title">🔀 رتّب مراحل دورة الفراشة</div>
+    <div class="sort-sub">اسحب كل مرحلة وضعها في الترتيب الصحيح</div>
+
+    <div class="stages-pool" id="pool">
+      <div class="stage-card" draggable="true" data-stage="3">🦋<span>الفراشة</span></div>
+      <div class="stage-card" draggable="true" data-stage="0">🥚<span>البيضة</span></div>
+      <div class="stage-card" draggable="true" data-stage="2">🫘<span>الشرنقة</span></div>
+      <div class="stage-card" draggable="true" data-stage="1">🐛<span>اليرقة</span></div>
+    </div>
+
+    <div class="drop-zone" id="dropZone">
+      <div class="drop-slot" data-pos="0"><span class="slot-num">1</span></div>
+      <div class="drop-slot" data-pos="1"><span class="slot-num">2</span></div>
+      <div class="drop-slot" data-pos="2"><span class="slot-num">3</span></div>
+      <div class="drop-slot" data-pos="3"><span class="slot-num">4</span></div>
+    </div>
+
+    <button class="check-btn" onclick="checkSort()">تحقق ✓</button>
+  </div>
+
+  <!-- ═══ GAME 2: MATCH ═══ -->
+  <div class="section" id="game1">
+    <div class="sort-title">🔗 صل المرحلة بوصفها</div>
+    <div class="sort-sub">اضغط على مرحلة ثم على وصفها الصحيح</div>
+
+    <div class="match-grid">
+      <div class="match-col">
+        <h3>المرحلة</h3>
+        <div class="match-item" data-type="stage" data-id="0" onclick="selectMatch(this)">🥚 البيضة</div>
+        <div class="match-item" data-type="stage" data-id="1" onclick="selectMatch(this)">🐛 اليرقة</div>
+        <div class="match-item" data-type="stage" data-id="2" onclick="selectMatch(this)">🫘 الشرنقة</div>
+        <div class="match-item" data-type="stage" data-id="3" onclick="selectMatch(this)">🦋 الفراشة</div>
+      </div>
+      <div class="match-col">
+        <h3>الوصف</h3>
+        <div class="match-item" data-type="desc" data-id="2" onclick="selectMatch(this)">تتحول فيها اليرقة بشكل كامل</div>
+        <div class="match-item" data-type="desc" data-id="3" onclick="selectMatch(this)">تطير وتلقح الأزهار</div>
+        <div class="match-item" data-type="desc" data-id="0" onclick="selectMatch(this)">بداية دورة الحياة على الأوراق</div>
+        <div class="match-item" data-type="desc" data-id="1" onclick="selectMatch(this)">تأكل الأوراق وتنمو بسرعة</div>
+      </div>
+    </div>
+    <div id="matchFeedback" style="text-align:center;font-size:1rem;min-height:28px;margin-bottom:12px;"></div>
+    <button class="next-btn" id="matchNext" style="display:none" onclick="goGame(2)">التالي ←</button>
+  </div>
+
+  <!-- ═══ GAME 3: QUIZ ═══ -->
+  <div class="section" id="game2">
+    <div class="quiz-question">
+      <div class="quiz-q-emoji" id="qEmoji">🥚</div>
+      <div class="quiz-q-num" id="qNum">سؤال 1 من 5</div>
+      <div class="quiz-q-text" id="qText">في أي مرحلة تضع الفراشة بيوضها على الأوراق؟</div>
+    </div>
+    <div class="quiz-options" id="quizOpts"></div>
+    <div class="quiz-feedback" id="quizFeedback"></div>
+    <button class="next-btn" id="quizNext" style="display:none" onclick="nextQuestion()">السؤال التالي ←</button>
+  </div>
+
+  <!-- ═══ GAME 4: MEMORY ═══ -->
+  <div class="section" id="game3">
+    <div class="sort-title">🧠 لعبة الذاكرة</div>
+    <div class="sort-sub">اقلب بطاقتين — طابق الصورة مع الاسم</div>
+    <div class="memory-grid" id="memGrid"></div>
+    <div id="memFeedback" style="text-align:center;font-size:1rem;min-height:28px;"></div>
+  </div>
+
+  <!-- ═══ RESULT ═══ -->
+  <div class="section" id="resultScreen">
+    <div class="result-screen">
+      <div class="result-emoji" id="resultEmoji">🏆</div>
+      <div class="result-title" id="resultTitle">أحسنت!</div>
+      <div id="resultName" style="font-size:1.1rem;color:var(--pink);font-weight:700;margin-bottom:8px;"></div>
+      <div class="result-score">حصلت على <span id="finalScore">0</span> نقطة</div>
+      <button class="restart-btn" onclick="restartGame()">🔄 العب مجدداً</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+let playerName = '';
+
+function validateName() {
+  const input = document.getElementById('playerName');
+  const btn = document.getElementById('startBtn');
+  btn.disabled = input.value.trim().length < 2;
+}
+
+function startGame() {
+  const input = document.getElementById('playerName');
+  const name = input.value.trim();
+  if (name.length < 2) return;
+  playerName = name;
+  document.getElementById('nameScreen').classList.add('hidden');
+  document.getElementById('welcomeName').textContent = playerName;
+  document.getElementById('welcomeChip').style.display = 'inline-flex';
+}
+
+let score = 0;
+let streak = 0;
+let currentGame = 0;
+let gameDone = [false,false,false,false];
+
+function updateScore(pts) {
+  score += pts;
+  streak++;
+  if (streak >= 3) pts += 5; // bonus
+  document.getElementById('scoreVal').textContent = score;
+  document.getElementById('streakVal').textContent = '🔥' + streak;
+}
+
+function updateProgress() {
+  const done = gameDone.filter(Boolean).length;
+  const pct = (done / 4) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressLbl').textContent = `لعبة ${currentGame+1} من 4`;
+}
+
+function goGame(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('game'+n).classList.add('active');
+  document.querySelectorAll('.game-tab').forEach((t,i) => {
+    t.classList.remove('active');
+    if (i === n) t.classList.add('active');
+  });
+  currentGame = n;
+  updateProgress();
+  if (n === 2) initQuiz();
+  if (n === 3) initMemory();
+}
+
+// ═══ GAME 1: SORT ═══
+let dragEl = null;
+
+document.querySelectorAll('.stage-card').forEach(card => {
+  card.addEventListener('dragstart', e => {
+    dragEl = card;
+    setTimeout(() => card.classList.add('dragging'), 0);
+  });
+  card.addEventListener('dragend', () => card.classList.remove('dragging'));
+});
+
+document.querySelectorAll('.drop-slot').forEach(slot => {
+  slot.addEventListener('dragover', e => { e.preventDefault(); slot.classList.add('over'); });
+  slot.addEventListener('dragleave', () => slot.classList.remove('over'));
+  slot.addEventListener('drop', e => {
+    e.preventDefault();
+    slot.classList.remove('over');
+    if (dragEl && slot.children.length <= 1) {
+      const existing = slot.querySelector('.stage-card');
+      if (existing) document.getElementById('pool').appendChild(existing);
+      slot.appendChild(dragEl);
+      // live feedback: update slot color immediately after drop
+      liveCheckSlot(slot);
+      // check if all now correct
+      checkSortSilent();
+    }
+  });
+});
+
+function liveCheckSlot(slot) {
+  const correct = [0,1,2,3];
+  const pos = parseInt(slot.dataset.pos);
+  const card = slot.querySelector('.stage-card');
+  if (!card) { slot.classList.remove('correct','wrong'); return; }
+  const stageId = parseInt(card.dataset.stage);
+  if (stageId === correct[pos]) {
+    slot.classList.add('correct');
+    slot.classList.remove('wrong');
+  } else {
+    slot.classList.add('wrong');
+    slot.classList.remove('correct');
+  }
+}
+
+function checkSortSilent() {
+  const slots = document.querySelectorAll('.drop-slot');
+  const correct = [0,1,2,3];
+  let allCorrect = true;
+  let allFilled = true;
+  slots.forEach((slot, i) => {
+    const card = slot.querySelector('.stage-card');
+    if (!card) { allFilled = false; return; }
+    if (parseInt(card.dataset.stage) !== correct[i]) allCorrect = false;
+  });
+  if (allFilled && allCorrect) {
+    updateScore(20);
+    gameDone[0] = true;
+    document.getElementById('tab0').classList.add('done');
+    setTimeout(() => goGame(1), 1000);
+  }
+}
+
+function checkSort() {
+  const slots = document.querySelectorAll('.drop-slot');
+  let allFilled = true;
+  slots.forEach(slot => { if (!slot.querySelector('.stage-card')) allFilled = false; });
+  if (!allFilled) { alert('رتّب جميع المراحل أولاً!'); return; }
+  slots.forEach(slot => liveCheckSlot(slot));
+  checkSortSilent();
+}
+
+// ═══ GAME 2: MATCH ═══
+let selectedStage = null;
+let selectedDesc = null;
+let matchCount = 0;
+
+function selectMatch(el) {
+  if (el.classList.contains('matched')) return;
+
+  if (el.dataset.type === 'stage') {
+    document.querySelectorAll('[data-type="stage"]').forEach(e => e.classList.remove('selected'));
+    selectedStage = el;
+    el.classList.add('selected');
+  } else {
+    document.querySelectorAll('[data-type="desc"]').forEach(e => e.classList.remove('selected'));
+    selectedDesc = el;
+    el.classList.add('selected');
+  }
+
+  if (selectedStage && selectedDesc) {
+    if (selectedStage.dataset.id === selectedDesc.dataset.id) {
+      selectedStage.classList.add('matched'); selectedStage.classList.remove('selected');
+      selectedDesc.classList.add('matched'); selectedDesc.classList.remove('selected');
+      document.getElementById('matchFeedback').innerHTML = '<span style="color:var(--green)">✅ صحيح!</span>';
+      updateScore(15);
+      matchCount++;
+      if (matchCount === 4) {
+        gameDone[1] = true;
+        document.getElementById('tab1').classList.add('done');
+        document.getElementById('matchNext').style.display = 'block';
+      }
+    } else {
+      selectedStage.classList.add('wrong'); selectedDesc.classList.add('wrong');
+      document.getElementById('matchFeedback').innerHTML = '<span style="color:var(--red)">❌ حاول مرة أخرى</span>';
+      streak = 0;
+      setTimeout(() => {
+        selectedStage.classList.remove('wrong','selected');
+        selectedDesc.classList.remove('wrong','selected');
+      }, 700);
+    }
+    selectedStage = null; selectedDesc = null;
+  }
+}
+
+// ═══ GAME 3: QUIZ ═══
+const questions = [
+  { emoji:'🥚', q:'كم يوماً تستغرق البيضة قبل أن تفقس؟', opts:['يوم واحد','3-7 أيام','شهر كامل','سنة كاملة'], ans:1 },
+  { emoji:'🐛', q:'ماذا تأكل اليرقة بشكل رئيسي؟', opts:['الفراشات','الأزهار','أوراق الشجر','الماء فقط'], ans:2 },
+  { emoji:'🫘', q:'ماذا يحدث للشرنقة من الداخل؟', opts:['تنام فقط','تتحول بشكل كامل','تأكل وتنمو','لا شيء'], ans:1 },
+  { emoji:'🦋', q:'ما دور الفراشة البالغة في الطبيعة؟', opts:['تأكل الحشرات','تبني الأعشاش','تلقح الأزهار','تبني سدوداً'], ans:2 },
+  { emoji:'🔄', q:'ما عدد مراحل دورة حياة الفراشة؟', opts:['2','3','4','5'], ans:2 },
+];
+let qIndex = 0;
+
+function initQuiz() { qIndex = 0; renderQuestion(); }
+
+function renderQuestion() {
+  if (qIndex >= questions.length) {
+    gameDone[2] = true;
+    document.getElementById('tab2').classList.add('done');
+    goGame(3);
+    return;
+  }
+  const q = questions[qIndex];
+  document.getElementById('qEmoji').textContent = q.emoji;
+  document.getElementById('qNum').textContent = `سؤال ${qIndex+1} من ${questions.length}`;
+  document.getElementById('qText').textContent = q.q;
+  document.getElementById('quizFeedback').textContent = '';
+  document.getElementById('quizFeedback').className = 'quiz-feedback';
+  document.getElementById('quizNext').style.display = 'none';
+
+  const opts = document.getElementById('quizOpts');
+  opts.innerHTML = '';
+  q.opts.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'quiz-opt';
+    btn.textContent = opt;
+    btn.onclick = () => answerQuiz(i, q.ans, btn);
+    opts.appendChild(btn);
+  });
+}
+
+function answerQuiz(chosen, correct, btn) {
+  if (chosen === correct) {
+    // disable all options
+    document.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
+    btn.classList.add('correct');
+    document.getElementById('quizFeedback').textContent = '✅ إجابة صحيحة!';
+    document.getElementById('quizFeedback').className = 'quiz-feedback correct';
+    updateScore(10);
+    qIndex++;
+    document.getElementById('quizNext').style.display = 'block';
+  } else {
+    // mark wrong, keep others enabled for retry
+    btn.classList.add('wrong');
+    btn.disabled = true;
+    document.getElementById('quizFeedback').textContent = '❌ خطأ! حاول مرة أخرى';
+    document.getElementById('quizFeedback').className = 'quiz-feedback wrong';
+    streak = 0;
+    document.getElementById('streakVal').textContent = '🔥0';
+    // re-enable remaining options after shake
+    setTimeout(() => { btn.classList.remove('wrong'); }, 600);
+    setTimeout(() => { btn.disabled = false; btn.classList.remove('wrong'); }, 700);
+  }
+}
+
+function nextQuestion() { renderQuestion(); }
+
+// ═══ GAME 4: MEMORY ═══
+const memPairs = [
+  { emoji:'🥚', name:'البيضة' },
+  { emoji:'🐛', name:'اليرقة' },
+  { emoji:'🫘', name:'الشرنقة' },
+  { emoji:'🦋', name:'الفراشة' },
+];
+let memFlipped = [];
+let memMatched = 0;
+let memLocked = false;
+
+function initMemory() {
+  memFlipped = []; memMatched = 0; memLocked = false;
+  const cards = [];
+  memPairs.forEach((p,i) => {
+    cards.push({ id:i, content:p.emoji, isEmoji:true });
+    cards.push({ id:i, content:p.name, isEmoji:false });
+  });
+  cards.sort(() => Math.random()-0.5);
+
+  const grid = document.getElementById('memGrid');
+  grid.innerHTML = '';
+  cards.forEach((c,idx) => {
+    const div = document.createElement('div');
+    div.className = 'mem-card';
+    div.dataset.id = c.id;
+    div.dataset.idx = idx;
+    div.innerHTML = `<div class="mem-inner"><div class="mem-front">❓</div><div class="mem-back">${c.content}</div></div>`;
+    div.onclick = () => flipMem(div);
+    grid.appendChild(div);
+  });
+}
+
+function flipMem(card) {
+  if (memLocked || card.classList.contains('flipped') || card.classList.contains('matched')) return;
+  card.classList.add('flipped');
+  memFlipped.push(card);
+
+  if (memFlipped.length === 2) {
+    memLocked = true;
+    const [a,b] = memFlipped;
+    if (a.dataset.id === b.dataset.id && a !== b) {
+      // correct match — turn green instantly
+      a.classList.add('matched'); b.classList.add('matched');
+      document.getElementById('memFeedback').innerHTML = '<span style="color:var(--green)">✅ تطابق! ممتاز!</span>';
+      updateScore(15);
+      memMatched++;
+      if (memMatched === memPairs.length) {
+        gameDone[3] = true;
+        document.getElementById('tab3').classList.add('done');
+        setTimeout(showResult, 1000);
+      }
+      memFlipped = []; memLocked = false;
+    } else {
+      // wrong — show red briefly then flip back so they can retry
+      document.getElementById('memFeedback').innerHTML = '<span style="color:var(--red)">❌ ليسا متطابقَين، حاول مجدداً!</span>';
+      setTimeout(() => {
+        a.classList.remove('flipped'); b.classList.remove('flipped');
+        document.getElementById('memFeedback').innerHTML = '';
+        memFlipped = []; memLocked = false;
+      }, 900);
+    }
+  }
+}
+
+function showResult() {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById('resultScreen').classList.add('active');
+  document.getElementById('finalScore').textContent = score;
+  const pct = score / 200 * 100;
+  let emoji = '🌟', title = 'رائع!';
+  if (pct >= 80)      { emoji = '🏆'; title = 'ممتاز! أنت نجم اليوم!'; }
+  else if (pct >= 50) { emoji = '🌟'; title = 'أحسنت! استمر!'; }
+  else                { emoji = '💪'; title = 'لا بأس — حاول مجدداً!'; }
+  document.getElementById('resultEmoji').textContent = emoji;
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultName').textContent = '🎉 ' + playerName + '!';
+}
+
+function restartGame() {
+  score = 0; streak = 0; gameDone = [false,false,false,false];
+  document.getElementById('scoreVal').textContent = '0';
+  document.getElementById('streakVal').textContent = '🔥0';
+  document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('done','active'));
+  document.getElementById('tab0').classList.add('active');
+  // Reset sort
+  const pool = document.getElementById('pool');
+  document.querySelectorAll('.drop-slot').forEach(slot => {
+    const card = slot.querySelector('.stage-card');
+    if (card) pool.appendChild(card);
+    slot.classList.remove('correct','wrong');
+  });
+  // Reset match
+  matchCount = 0; selectedStage = null; selectedDesc = null;
+  document.querySelectorAll('.match-item').forEach(el => el.classList.remove('matched','selected','wrong'));
+  document.getElementById('matchNext').style.display = 'none';
+  document.getElementById('matchFeedback').innerHTML = '';
+
+  goGame(0);
+}
+
+updateProgress();
+</script>
+
+</body>
+</html>
